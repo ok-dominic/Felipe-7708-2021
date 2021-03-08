@@ -8,8 +8,12 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.Encoder;
+
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.StatorCurrentLimitConfiguration;
+import com.ctre.phoenix.motorcontrol.can.TalonFX;
 //import edu.wpi.first.wpilibj.PWMVictorSPXW;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;   //not using this one?? according to delphi?
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.controller.PIDController;
 import edu.wpi.first.wpilibj.controller.ProfiledPIDController;
@@ -17,56 +21,89 @@ import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.trajectory.TrapezoidProfile;
-import edu.wpi.first.hal.DIOJNI;
+//import edu.wpi.first.hal.util.UncleanStatusException;
+//import edu.wpi.first.hal.DIOJNI; //might not need
 
 
 public class SwerveModule {
-  private static final double kWheelRadius = 0.0508;
+  private static final double kWheelRadius = 2.0;       //was 0.0508
   private static final int kEncoderResolution = 4096;
+  private static final int kEncoderResolution2 = 2048;
 
   private static final double kModuleMaxAngularVelocity = Drivetrain.kMaxAngularSpeed;
   private static final double kModuleMaxAngularAcceleration
       = 2 * Math.PI; // radians per second squared
 
-  private final SpeedController m_driveMotor;
-  private final SpeedController m_turningMotor;
+  private final WPI_TalonFX m_driveMotor;              //was speedcontroller
+  private final WPI_TalonFX m_turningMotor;
 
-  private final Encoder m_driveEncoder = new Encoder(9, 10); //change these #'s?   was 0,1
-  private final Encoder m_turningEncoder = new Encoder(11, 12); // was 2,3
+/*private final Encoder m_driveEncoder = new Encoder(0, 1 ); //change these #'s?   was 0,1
+  private final Encoder m_turningEncoder = new Encoder(2, 3); // was 2,3   */
+  
+  public static Encoder m_magEncoder; 
+  public static WPI_TalonFX m_driveEncoder;           ///2048 resolution
 
-  private final PIDController m_drivePIDController = new PIDController(1, 0, 0);
+  
+  private final PIDController m_drivePIDController = new PIDController(15, 0.01, 0.1);    
 
+  //KP initialy set to 1
   private final ProfiledPIDController m_turningPIDController
       = new ProfiledPIDController(1, 0, 0,
-      new TrapezoidProfile.Constraints(kModuleMaxAngularVelocity, kModuleMaxAngularAcceleration));
+      new TrapezoidProfile.Constraints(kModuleMaxAngularVelocity, kModuleMaxAngularAcceleration));  //was 1,0,0
 
   // Gains are for example purposes only - must be determined for your own robot!
-  private final SimpleMotorFeedforward m_driveFeedforward = new SimpleMotorFeedforward(1, 3);
-  private final SimpleMotorFeedforward m_turnFeedforward = new SimpleMotorFeedforward(1, 0.5);
-
+  private final SimpleMotorFeedforward m_driveFeedforward = new SimpleMotorFeedforward(1, 3);    //1,3
+  private final SimpleMotorFeedforward m_turnFeedforward = new SimpleMotorFeedforward(4, .5);     //1,.5
+//                                                              first param controls speed of z , second param mystery       
   /**
    * Constructs a SwerveModule.
    *
    * @param driveMotorChannel   ID for the drive motor.
    * @param turningMotorChannel ID for the turning motor.
    */
-  public SwerveModule(int driveMotorChannel, int turningMotorChannel) {
+  public SwerveModule(int driveMotorChannel, int turningMotorChannel, int aChannel, int bChannel) {
     m_driveMotor = new WPI_TalonFX(driveMotorChannel);
     m_turningMotor = new WPI_TalonFX(turningMotorChannel);
+    
+    m_magEncoder = new Encoder (aChannel, bChannel);   //these was added as potential solution
+    m_driveEncoder = new WPI_TalonFX(0);
+
+    //m_driveMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, PID_TYPE, DEFAULT_TIMEOUT); //?? what
+    
+    //                                               enabled | Limit(amp) | Trigger Threshold(amp) | Trigger Threshold Time(s) 
+    m_driveMotor.configStatorCurrentLimit(new StatorCurrentLimitConfiguration(true, 60, 65, 0.25));
+    m_turningMotor.configStatorCurrentLimit(new StatorCurrentLimitConfiguration(true, 60, 65, 0.25));
 
     // Set the distance per pulse for the drive encoder. We can simply use the
     // distance traveled for one rotation of the wheel divided by the encoder
     // resolution.
-    m_driveEncoder.setDistancePerPulse(2 * Math.PI * kWheelRadius / kEncoderResolution);
+    //m_magEncoder.setDistancePerPulse(2 * Math.PI * kWheelRadius / kEncoderResolution); //was driveencoder
+    m_driveEncoder.set(2 * Math.PI * kWheelRadius / kEncoderResolution2);
 
     // Set the distance (in this case, angle) per pulse for the turning encoder.
-    // This is the the angle through an entire rotation (2 * wpi::math::pi)
+    // This is the the angle through an entire rotation (2 * wpi::math::pi)                                   mallory did it
     // divided by the encoder resolution.
-    m_turningEncoder.setDistancePerPulse(2 * Math.PI / kEncoderResolution);
+    m_magEncoder.setDistancePerPulse(2 * Math.PI / kEncoderResolution); // was turn encoder
 
     // Limit the PID Controller's input range between -pi and pi and set the input
     // to be continuous.
     m_turningPIDController.enableContinuousInput(-Math.PI, Math.PI);
+  }
+ 
+  public void periodic() throws InterruptedException{
+    m_magEncoder.wait(1000);
+  }
+
+  public boolean getDirection(){
+    return m_magEncoder.getDirection();
+  }
+
+  public double getDistance(){
+    return m_magEncoder.getDistance();
+  }
+
+  public void reset(){
+    m_magEncoder.reset();
   }
 
   /**
@@ -75,7 +112,8 @@ public class SwerveModule {
    * @return The current state of the module.
    */
   public SwerveModuleState getState() {
-    return new SwerveModuleState(m_driveEncoder.getRate(), new Rotation2d(m_turningEncoder.get()));
+    //first param was mag encoder.getrate()
+    return new SwerveModuleState(m_driveEncoder.getSelectedSensorVelocity(), new Rotation2d(m_magEncoder.get())); //was drive then turn encoder
   }
 
   /**
@@ -84,15 +122,17 @@ public class SwerveModule {
    * @param state Desired state with speed and angle.
    */
   public void setDesiredState(SwerveModuleState state) {
-    // Calculate the drive output from the drive PID controller.
-    final double driveOutput = m_drivePIDController.calculate(
-        m_driveEncoder.getRate(), state.speedMetersPerSecond);
+    // Calculate the drive output from the drive PID controller. 
+    
 
+    final double driveOutput = m_drivePIDController.calculate(
+        m_driveEncoder.getSelectedSensorVelocity(), state.speedMetersPerSecond); // was drive encoder, as mag
+                     //was get rate
     final double driveFeedforward = m_driveFeedforward.calculate(state.speedMetersPerSecond);
 
     // Calculate the turning motor output from the turning PID controller.
     final double turnOutput = m_turningPIDController.calculate(
-        m_turningEncoder.get(), state.angle.getRadians()
+        m_magEncoder.get(), state.angle.getRadians()   // was turn encoder
     );
 
     final double turnFeedforward =

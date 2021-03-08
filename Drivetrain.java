@@ -13,27 +13,33 @@ import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj.kinematics.SwerveDriveOdometry;
-import edu.wpi.first.hal.DIOJNI;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard; 
+import frc.robot.SwerveModule;
 
-/**
- * Represents a swerve drive style drivetrain.
+//import edu.wpi.first.hal.DIOJNI;
+
+/**                                                                                                     I've never thought of eating people 
+ * Represents a swerve drive style drivetrain.                                                                Oh my gosh our whole week is set
  */
 public class Drivetrain {
   public static final double kMaxSpeed = 3.0; // 3 meters per second
   public static final double kMaxAngularSpeed = Math.PI; // 1/2 rotation per second
 
-  private final Translation2d m_frontLeftLocation = new Translation2d(0.381, 0.381);
-  private final Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381);
-  private final Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);
-  private final Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);
+  private final Translation2d m_frontLeftLocation = new Translation2d(0.381, 0.381);     
+  private final Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381);         
+  private final Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);            
+  private final Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);    
 
-  private final SwerveModule m_frontLeft = new SwerveModule(2, 3);
-  private final SwerveModule m_frontRight = new SwerveModule(4, 5);
-  private final SwerveModule m_backLeft = new SwerveModule(0, 1);
-  private final SwerveModule m_backRight = new SwerveModule(6, 7);
+                              // parameters   driveport, turnport, a encoder port, b encoder port
+                                                                                                
+  private final SwerveModule m_frontLeft = new SwerveModule(3, 2, 0, 1);            //back to original now             
+  private final SwerveModule m_frontRight = new SwerveModule(12, 13, 4, 5);
+  private final SwerveModule m_backLeft = new SwerveModule(0, 1, 2, 3); //7 - 15   8-14   
+  private final SwerveModule m_backRight = new SwerveModule(15, 14, 6, 7);
 
-  private final AnalogGyro m_gyro = new AnalogGyro(0);
-
+  private  AnalogGyro m_gyro = new AnalogGyro(1);
+                                                                                                  
   private final SwerveDriveKinematics m_kinematics = new SwerveDriveKinematics(
       m_frontLeftLocation, m_frontRightLocation, m_backLeftLocation, m_backRightLocation
   );
@@ -42,15 +48,39 @@ public class Drivetrain {
 
   public Drivetrain() {
     m_gyro.reset();
+    /*m_frontLeft.reset();  //do these go here??
+    m_frontRight.reset();
+    m_backLeft.reset();
+    m_backRight.reset(); */
+
+  }
+
+  public void periodic() {
+    Shuffleboard.getTab("Encoders").addBoolean("Direction",() -> m_frontLeft.getDirection());
+    Shuffleboard.getTab("Encoders").addBoolean("Direction",() -> m_frontRight.getDirection());
+    Shuffleboard.getTab("Encoders").addBoolean("Direction",() -> m_backLeft.getDirection());
+    Shuffleboard.getTab("Encoders").addBoolean("Direction",() -> m_backRight.getDirection());
+
+
+    SmartDashboard.putNumber("Front Left Distance", m_frontLeft.getDistance());
+    SmartDashboard.putNumber("Front Right Distance", m_frontRight.getDistance());
+    SmartDashboard.putNumber("Back Left Distance", m_backLeft.getDistance());            
+    SmartDashboard.putNumber("Back Right Distance", m_backRight.getDistance());
+  
+    SmartDashboard.putBoolean("Front Left Direction", m_frontLeft.getDirection());
+    SmartDashboard.putBoolean("Front Right Direction", m_frontRight.getDirection());
+    SmartDashboard.putBoolean("Back Left Direction", m_backLeft.getDirection());
+    SmartDashboard.putBoolean("Back Right Direction", m_backRight.getDirection());
+
   }
 
   /**
    * Returns the angle of the robot as a Rotation2d.
    *
    * @return The angle of the robot.
-   */
+   */    
   public Rotation2d getAngle() {
-    // Negating the angle because WPILib gyros are CW positive.
+    // Negating the angle because WPILib gyros are CW positive.   ?? gyro
     return Rotation2d.fromDegrees(-m_gyro.getAngle());
   }
 
@@ -69,6 +99,7 @@ public class Drivetrain {
             xSpeed, ySpeed, rot, getAngle())
             : new ChassisSpeeds(xSpeed, ySpeed, rot)
     );
+    
     SwerveDriveKinematics.normalizeWheelSpeeds(swerveModuleStates, kMaxSpeed);
     m_frontLeft.setDesiredState(swerveModuleStates[0]);
     m_frontRight.setDesiredState(swerveModuleStates[1]);
