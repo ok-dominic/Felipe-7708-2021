@@ -68,7 +68,6 @@ public class SwerveModule {
     m_magEncoder = new Encoder (aChannel, bChannel);   //these was added as potential solution
     m_driveEncoder = new WPI_TalonFX(0);
 
-    //m_driveMotor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor, PID_TYPE, DEFAULT_TIMEOUT); //?? what
     
     //                                               enabled | Limit(amp) | Trigger Threshold(amp) | Trigger Threshold Time(s) 
     m_driveMotor.configStatorCurrentLimit(new StatorCurrentLimitConfiguration(true, 60, 65, 0.25));
