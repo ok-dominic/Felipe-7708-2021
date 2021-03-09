@@ -35,7 +35,7 @@ public class Drivetrain {
                                                                                                 
   private final SwerveModule m_frontLeft = new SwerveModule(3, 2, 0, 1);            //back to original now             
   private final SwerveModule m_frontRight = new SwerveModule(12, 13, 4, 5);
-  private final SwerveModule m_backLeft = new SwerveModule(0, 1, 2, 3); //7 - 15   8-14   
+  private final SwerveModule m_backLeft = new SwerveModule(0, 1, 2, 3); 
   private final SwerveModule m_backRight = new SwerveModule(15, 14, 6, 7);
 
   private  AnalogGyro m_gyro = new AnalogGyro(1);

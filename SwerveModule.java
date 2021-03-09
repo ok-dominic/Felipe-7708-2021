@@ -11,9 +11,7 @@ import edu.wpi.first.wpilibj.Encoder;
 
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.StatorCurrentLimitConfiguration;
-import com.ctre.phoenix.motorcontrol.can.TalonFX;
-//import edu.wpi.first.wpilibj.PWMVictorSPXW;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;   //not using this one?? according to delphi?
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX; 
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.controller.PIDController;
 import edu.wpi.first.wpilibj.controller.ProfiledPIDController;
@@ -21,8 +19,6 @@ import edu.wpi.first.wpilibj.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.trajectory.TrapezoidProfile;
-//import edu.wpi.first.hal.util.UncleanStatusException;
-//import edu.wpi.first.hal.DIOJNI; //might not need
 
 
 public class SwerveModule {
@@ -37,14 +33,14 @@ public class SwerveModule {
   private final WPI_TalonFX m_driveMotor;              //was speedcontroller
   private final WPI_TalonFX m_turningMotor;
 
-/*private final Encoder m_driveEncoder = new Encoder(0, 1 ); //change these #'s?   was 0,1
-  private final Encoder m_turningEncoder = new Encoder(2, 3); // was 2,3   */
+/*private final Encoder m_driveEncoder = new Encoder(0, 1 ); ignore these, was from original example
+  private final Encoder m_turningEncoder = new Encoder(2, 3);  */
   
   public static Encoder m_magEncoder; 
   public static WPI_TalonFX m_driveEncoder;           ///2048 resolution
 
   
-  private final PIDController m_drivePIDController = new PIDController(15, 0.01, 0.1);    
+  private final PIDController m_drivePIDController = new PIDController(15.23, 0.01, 0.087);    
 
   //KP initialy set to 1
   private final ProfiledPIDController m_turningPIDController
@@ -73,6 +69,9 @@ public class SwerveModule {
     m_driveMotor.configStatorCurrentLimit(new StatorCurrentLimitConfiguration(true, 60, 65, 0.25));
     m_turningMotor.configStatorCurrentLimit(new StatorCurrentLimitConfiguration(true, 60, 65, 0.25));
 
+    m_driveMotor.set(m_drivePIDController.calculate(m_driveEncoder.get(), .5));
+    m_turningMotor.set(m_turningPIDController.calculate(m_magEncoder.getDistance(), .5));
+
     // Set the distance per pulse for the drive encoder. We can simply use the
     // distance traveled for one rotation of the wheel divided by the encoder
     // resolution.
@@ -90,7 +89,7 @@ public class SwerveModule {
   }
  
   public void periodic() throws InterruptedException{
-    m_magEncoder.wait(1000);
+    m_magEncoder.wait(500);
   }
 
   public boolean getDirection(){
